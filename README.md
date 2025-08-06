@@ -36,10 +36,24 @@ A REST API built with Koa.js and MongoDB.
 
 The API will be available at `http://localhost:3000`
 
-## Endpoints
+## How to test
 
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users` - Create new user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+To run the test suite, use:
+
+```bash
+npm test
+```
+
+## API Documentation
+
+The API documentation is available through Swagger UI. To access it:
+
+1. Start the server:
+
+   ```bash
+   npm run dev
+   ```
+
+2. Visit `http://localhost:3000/docs` in your browser to view the interactive API documentation.
+
+The Swagger UI provides detailed information about all available endpoints, request/response schemas, and allows you to test the API directly from the browser.
