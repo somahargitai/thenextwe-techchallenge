@@ -1,8 +1,13 @@
 import Koa, { Context } from 'koa';
 import Router from 'koa-router';
 import { koaSwagger } from 'koa2-swagger-ui';
+import mongoose from 'mongoose';
 import * as dotenv from 'dotenv';
+
 import { swaggerSpec } from './swagger';
+import projectsRouter from './routes/projects';
+import coachingsRouter from './routes/coachings';
+import { authMiddleware } from './middleware/auth';
 
 dotenv.config();
 
@@ -18,18 +23,17 @@ interface HelloResponse {
  * /:
  *   get:
  *     summary: Health check endpoint
- *     description: Returns the health status of the server
+ *     description: Returns the health status and runtime information of the server
+ *     tags:
+ *       - Health
+ *     security: []
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Server health information
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   description: The health status of the server
+ *               $ref: '#/components/schemas/HealthResponse'
  */
 router.get('/', (ctx: Context) => {
   const healthInfo = {
@@ -46,21 +50,26 @@ router.get('/', (ctx: Context) => {
  * /hello:
  *   get:
  *     summary: Hello World endpoint
- *     description: Returns a hello world message
+ *     description: Simple endpoint that returns a hello world message for testing purposes
+ *     tags:
+ *       - Testing
+ *     security: []
  *     responses:
  *       200:
- *         description: Successful response
+ *         description: Hello world message
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/HelloResponse'
+ *             example:
+ *               message: "Hello World!"
  */
 router.get('/hello', (ctx: Context) => {
   const response: HelloResponse = { message: 'Hello World!' };
   ctx.body = response;
 });
 
-// Swagger UI route
+// Swagger
 app.use(
   koaSwagger({
     routePrefix: '/docs',
@@ -70,12 +79,37 @@ app.use(
   })
 );
 
+// Connect to MongoDB
+const connectDB = async () => {
+  try {
+    const mongoUri =
+      process.env.MONGODB_URI ||
+      'mongodb://admin:password@localhost:27017/koa_api?authSource=admin';
+    await mongoose.connect(mongoUri);
+    console.log('📦 MongoDB connected successfully');
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error);
+    process.exit(1);
+  }
+};
+
+// Apply auth middleware to protected routes
+projectsRouter.use(authMiddleware);
+coachingsRouter.use(authMiddleware);
+
+// Routers
+app.use(projectsRouter.routes());
+app.use(projectsRouter.allowedMethods());
+app.use(coachingsRouter.routes());
+app.use(coachingsRouter.allowedMethods());
+
 app.use(router.routes());
 app.use(router.allowedMethods());
 
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
 
-export const startServer = () => {
+export const startServer = async () => {
+  await connectDB();
   return app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });
