@@ -23,21 +23,22 @@ const listUsers = async () => {
     await connectDB();
 
     const users = await User.find({}).select('_id firstName lastName role');
-    
+
     console.log('\n👥 Available Users for API Testing:');
     console.log('=====================================\n');
-    
-    users.forEach(user => {
-      console.log(`ID: ${user._id} | 👉 Role: ${user.role} \t| Name: ${user.firstName} ${user.lastName}`);
+
+    users.forEach((user) => {
+      console.log(
+        `ID: ${user._id} | 👉 Role: ${user.role} \t| Name: ${user.firstName} ${user.lastName}`
+      );
     });
-    
+
     console.log('\n💡 Usage:\n');
-    console.log(`🚀 In Swagger:`)
-    console.log(`   Click 'Authorize' and paste a user ID from the list`)
-    console.log(`💡 In Postman:`)
+    console.log(`🚀 In Swagger:`);
+    console.log(`   Click 'Authorize' and paste a user ID from the list`);
+    console.log(`💡 In Postman:`);
     console.log('   Add the user ID to your request header as:');
     console.log('   X-User-Id: <user_id_from_above>');
-    
   } catch (error) {
     console.error('❌ Error listing users:', error);
   } finally {

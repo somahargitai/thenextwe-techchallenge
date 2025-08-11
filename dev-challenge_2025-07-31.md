@@ -4,27 +4,27 @@ Write a simple HTTP REST API using Node.js and Koa, backed by either MongoDB or 
 
 It should model the following entities internally:
 
-* User
-  * `role`: one of `client`, `coach`, `pm` (project manager), `ops` (operations)
-* Project
-  * `managerIds`: a list of user ID references
-* Coaching
-  * `clientId`: ID of the client user (the person being coached)
-  * `coachId`: ID of the coach user
-  * `projectId`: ID of the project this coaching is associated with
+- User
+  - `role`: one of `client`, `coach`, `pm` (project manager), `ops` (operations)
+- Project
+  - `managerIds`: a list of user ID references
+- Coaching
+  - `clientId`: ID of the client user (the person being coached)
+  - `coachId`: ID of the coach user
+  - `projectId`: ID of the project this coaching is associated with
 
 Feel free to add other fields to these entities as they make sense for your implementation – the above just represents the core relations between them.
 
 The API offers the following endpoints:
 
-* `GET /projects`
-  * lists _all_ projects for users with the `ops` role
-  * for users with the `pm` role, lists the projects that include the user's ID in the `managerIds` list
-  * denies access for users with other roles
-* `GET /coachings`
-  * lists _all_ coachings for users with the `ops` role
-  * for users with the `pm` role, lists coachings whose `projectId` refers to a project that includes the user's ID in the `managerIds` list
-  * for users with the `client` or `coach` role, only returns coachings with that user's ID in the `clientId` resp. `coachId` field
+- `GET /projects`
+  - lists _all_ projects for users with the `ops` role
+  - for users with the `pm` role, lists the projects that include the user's ID in the `managerIds` list
+  - denies access for users with other roles
+- `GET /coachings`
+  - lists _all_ coachings for users with the `ops` role
+  - for users with the `pm` role, lists coachings whose `projectId` refers to a project that includes the user's ID in the `managerIds` list
+  - for users with the `client` or `coach` role, only returns coachings with that user's ID in the `clientId` resp. `coachId` field
 
 Consider the fact that a real-life system will have other resources (e.g. coaching calls, module results) that need the same or similar levels of role- and project-based access restrictions.
 
