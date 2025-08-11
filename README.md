@@ -72,9 +72,11 @@ The API documentation is available through Swagger UI. To access it:
 
 2. Visit `http://localhost:3000/docs` in your browser to view the interactive API documentation.
 
-3. Use `6893cdf475ffec5391f63af7` as the user id in the header to test the API or other user ids in the seed data file `src/seedData.ts`.
-
-The Swagger UI provides detailed information about all available endpoints, request/response schemas, and allows you to test the API directly from the browser.
+3. Use one of the available user IDs in the header to test the API. You can get the current user IDs by running `npm run list-users`, or use one of these examples:
+   - **Client**: `689a6e38fedb24124ad79c09` (Bambi Deer)
+   - **Coach**: `689a6e38fedb24124ad79c0f` (Sherlock Holmes)
+   - **Project Manager**: `689a6e38fedb24124ad79c13` (Tony Stark)
+   - **Operations**: `689a6e38fedb24124ad79c16` (Gandalf the Grey)
 
 ## Further Improvements Plan
 

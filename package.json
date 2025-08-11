@@ -13,6 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "seed": "ts-node src/seedData.ts",
+    "list-users": "ts-node src/listUsers.ts",
     "prettier": "prettier --write \"src/**/*.{ts,js}\" \"tests/**/*.{ts,js}\""
   },
   "dependencies": {
