@@ -7,7 +7,6 @@ import * as dotenv from 'dotenv';
 import { swaggerSpec } from './swagger';
 import projectsRouter from './routes/projects';
 import coachingsRouter from './routes/coachings';
-import { authMiddleware } from './middleware/auth';
 
 dotenv.config();
 
@@ -92,10 +91,6 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
-// Auth middleware for protected routes
-projectsRouter.use(authMiddleware);
-coachingsRouter.use(authMiddleware);
 
 // Routers
 app.use(projectsRouter.routes());

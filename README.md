@@ -1,5 +1,3 @@
-![TheNextWe Logo](assets/thenextwe-logo.svg)
-
 # TheNextWe - Koa MongoDB API
 
 A REST API built with Koa.js and MongoDB.
@@ -77,3 +75,10 @@ The API documentation is available through Swagger UI. To access it:
 3. Use `6893cdf475ffec5391f63af7` as the user id in the header to test the API or other user ids in the seed data file `src/seedData.ts`.
 
 The Swagger UI provides detailed information about all available endpoints, request/response schemas, and allows you to test the API directly from the browser.
+
+## Further Improvements Plan
+
+- add `koa-bodyparser` and `koa-cors` in case of frontend integration and new endpoints
+- add custom logger
+- implement caching layer (e.g. Redis) to improve performance for frequently accessed data
+- add request validation middleware using a schema validator like `Joi` or `Yup`
