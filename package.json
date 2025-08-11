@@ -12,7 +12,8 @@
     "test:coverage": "jest --coverage",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "seed": "ts-node src/seedData.ts"
+    "seed": "ts-node src/seedData.ts",
+    "prettier": "prettier --write \"src/**/*.{ts,js}\" \"tests/**/*.{ts,js}\""
   },
   "dependencies": {
     "dotenv": "^16.3.1",
@@ -32,6 +33,7 @@
     "@types/supertest": "^2.0.16",
     "@types/swagger-jsdoc": "^6.0.1",
     "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.2.0",
     "nodemon": "^3.0.1",
     "prettier": "^3.0.3",
     "supertest": "^6.3.4",

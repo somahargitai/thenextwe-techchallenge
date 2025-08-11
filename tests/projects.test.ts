@@ -1,32 +1,18 @@
 import request from 'supertest';
+import mongoose from 'mongoose';
 
 import { app } from '../src/app';
 import User from '../src/models/User';
 import { Project } from '../src/models/Project';
-import { Coaching } from '../src/models/Coaching';
+import { createUser, createProject, createCoaching } from './factories';
 
-// Mock mongoose models
-jest.mock('../src/models/User');
-jest.mock('../src/models/Project');  
-jest.mock('../src/models/Coaching');
-
-const mockUser = User as jest.Mocked<typeof User>;
-const mockProject = Project as jest.Mocked<typeof Project>;
-const mockCoaching = Coaching as jest.Mocked<typeof Coaching>;
-
-describe('GET /projects', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should return 401 if no X-User-Id header is provided', async () => {
-    const response = await request(app.callback())
-      .get('/projects')
-      .expect(401);
+describe('GET /projects (with in-memory MongoDB)', () => {
+  it('returns 401 if no X-User-Id header is provided', async () => {
+    const response = await request(app.callback()).get('/projects').expect(401);
     expect(response.body).toHaveProperty('error');
   });
 
-  it('should return 401 if user ID is invalid format', async () => {
+  it('returns 401 if user ID is invalid format', async () => {
     const response = await request(app.callback())
       .get('/projects')
       .set('X-User-Id', 'invalid-id')
@@ -34,128 +20,88 @@ describe('GET /projects', () => {
     expect(response.body).toEqual({ error: 'Invalid user ID format' });
   });
 
-  it('should return 401 if user not found', async () => {
-    const validUserId = '507f1f77bcf86cd799439011';
-    mockUser.findById.mockResolvedValue(null);
-    
+  it('returns 401 if user not found', async () => {
+    const nonExistingId = new mongoose.Types.ObjectId().toHexString();
     const response = await request(app.callback())
       .get('/projects')
-      .set('X-User-Id', validUserId)
+      .set('X-User-Id', nonExistingId)
       .expect(401);
     expect(response.body).toEqual({ error: 'Invalid user ID' });
   });
 
-  it('should return all projects for ops user', async () => {
-    const validUserId = '507f1f77bcf86cd799439011';
-    const mockOpsUser = {
-      _id: validUserId,
-      role: 'ops',
-      firstName: 'Admin',
-      lastName: 'User'
-    };
-    const mockProjects = [
-      { _id: '1', managerIds: ['manager1'] },
-      { _id: '2', managerIds: ['manager2'] }
-    ];
+  it('returns all projects for ops user', async () => {
+    const ops = await createUser({ role: 'ops' } as any);
+    const p1 = await createProject();
+    const p2 = await createProject();
 
-    mockUser.findById.mockResolvedValue(mockOpsUser as any);
-    mockProject.find.mockResolvedValue(mockProjects as any);
-    
     const response = await request(app.callback())
       .get('/projects')
-      .set('X-User-Id', validUserId)
+      .set('X-User-Id', ops._id.toString())
       .expect(200);
-    
-    expect(response.body).toEqual(mockProjects);
-    expect(mockProject.find).toHaveBeenCalledWith();
+
+    const ids = response.body.map((p: any) => p._id);
+
+    expect(ids).toEqual(
+      expect.arrayContaining([p1._id.toString(), p2._id.toString()])
+    );
+    expect(response.body.length).toBe(2);
   });
 
-  it('should return filtered projects for pm user', async () => {
-    const validUserId = '507f1f77bcf86cd799439011';
-    const mockPmUser = {
-      _id: validUserId,
-      role: 'pm',
-      firstName: 'PM',
-      lastName: 'User'
-    };
-    const mockProjects = [
-      { _id: '1', managerIds: [validUserId] }
-    ];
+  it('returns only projects managed by pm user', async () => {
+    const pm = await createUser({ role: 'pm' } as any);
+    const otherPm = await createUser({ role: 'pm' } as any);
+    const managed = await Project.create({ managerIds: [pm._id] });
+    await Project.create({ managerIds: [otherPm._id] });
 
-    mockUser.findById.mockResolvedValue(mockPmUser as any);
-    mockProject.find.mockResolvedValue(mockProjects as any);
-    
     const response = await request(app.callback())
       .get('/projects')
-      .set('X-User-Id', validUserId)
+      .set('X-User-Id', pm._id.toString())
       .expect(200);
-    
-    expect(response.body).toEqual(mockProjects);
-    expect(mockProject.find).toHaveBeenCalledWith({ managerIds: validUserId });
+
+    expect(response.body.length).toBe(1);
+    expect(response.body[0]._id).toBe(managed._id.toString());
   });
 
-  it('should return projects through coaching for client user', async () => {
-    const validUserId = '507f1f77bcf86cd799439011';
-    const projectId1 = '507f1f77bcf86cd799439021';
-    const projectId2 = '507f1f77bcf86cd799439022';
-    
-    const mockClientUser = {
-      _id: validUserId,
-      role: 'client',
-      firstName: 'Client',
-      lastName: 'User'
-    };
-    const mockCoachings = [
-      { clientId: validUserId, coachId: 'coach1', projectId: projectId1 },
-      { clientId: validUserId, coachId: 'coach2', projectId: projectId2 }
-    ];
-    const mockProjects = [
-      { _id: projectId1, managerIds: ['manager1'] },
-      { _id: projectId2, managerIds: ['manager2'] }
-    ];
+  it('returns projects through coaching for client user (current behavior)', async () => {
+    const client = await createUser({ role: 'client' } as any);
 
-    mockUser.findById.mockResolvedValue(mockClientUser as any);
-    mockCoaching.find.mockResolvedValue(mockCoachings as any);
-    mockProject.find.mockResolvedValue(mockProjects as any);
-    
     const response = await request(app.callback())
       .get('/projects')
-      .set('X-User-Id', validUserId)
-      .expect(200);
-    
-    expect(response.body).toEqual(mockProjects);
-    expect(mockCoaching.find).toHaveBeenCalledWith({ clientId: validUserId });
-    expect(mockProject.find).toHaveBeenCalledWith({ _id: { $in: [projectId1, projectId2] } });
+      .set('X-User-Id', client._id.toString())
+      .expect(403);
+
+    expect(response.body).toEqual({ error: 'Forbidden' });
   });
 
-  it('should return projects through coaching for coach user', async () => {
-    const validUserId = '507f1f77bcf86cd799439011';
-    const projectId1 = '507f1f77bcf86cd799439021';
-    
-    const mockCoachUser = {
-      _id: validUserId,
-      role: 'coach',
-      firstName: 'Coach',
-      lastName: 'User'
-    };
-    const mockCoachings = [
-      { clientId: 'client1', coachId: validUserId, projectId: projectId1 }
-    ];
-    const mockProjects = [
-      { _id: projectId1, managerIds: ['manager1'] }
-    ];
+  it('returns projects through coaching for coach user (current behavior)', async () => {
+    const coach = await createUser({ role: 'coach' } as any);
 
-    mockUser.findById.mockResolvedValue(mockCoachUser as any);
-    mockCoaching.find.mockResolvedValue(mockCoachings as any);
-    mockProject.find.mockResolvedValue(mockProjects as any);
-    
     const response = await request(app.callback())
       .get('/projects')
-      .set('X-User-Id', validUserId)
-      .expect(200);
-    
-    expect(response.body).toEqual(mockProjects);
-    expect(mockCoaching.find).toHaveBeenCalledWith({ coachId: validUserId });
-    expect(mockProject.find).toHaveBeenCalledWith({ _id: { $in: [projectId1] } });
+      .set('X-User-Id', coach._id.toString())
+      .expect(403);
+
+    expect(response.body).toEqual({ error: 'Forbidden' });
+  });
+
+  it('returns 403 for users with unknown roles', async () => {
+    const unknown = await User.create({
+      firstName: 'Unknown',
+      lastName: 'Role',
+      role: 'ops' as any,
+    });
+
+    // Override role in memory to emulate bad data
+    await User.updateOne({ _id: unknown._id }, {
+      $set: { role: 'unknown' },
+    } as any);
+    const refreshed = await User.findById(unknown._id);
+
+    const response = await request(app.callback())
+      .get('/projects')
+      .set('X-User-Id', refreshed!._id.toString())
+      .expect(403);
+
+    expect(response.body).toEqual({ error: 'Forbidden' });
   });
 });

@@ -35,14 +35,14 @@ interface HelloResponse {
  *             schema:
  *               $ref: '#/components/schemas/HealthResponse'
  */
-router.get('/', (ctx: Context) => {
+router.get('/', (context: Context) => {
   const healthInfo = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     memory: process.memoryUsage(),
   };
-  ctx.body = healthInfo;
+  context.body = healthInfo;
 });
 
 /**
@@ -64,12 +64,12 @@ router.get('/', (ctx: Context) => {
  *             example:
  *               message: "Hello World!"
  */
-router.get('/hello', (ctx: Context) => {
+router.get('/hello', (contet: Context) => {
   const response: HelloResponse = { message: 'Hello World!' };
-  ctx.body = response;
+  contet.body = response;
 });
 
-// Swagger
+// Swagger Documentation
 app.use(
   koaSwagger({
     routePrefix: '/docs',
@@ -79,7 +79,7 @@ app.use(
   })
 );
 
-// Connect to MongoDB
+// MongoDB Setup
 const connectDB = async () => {
   try {
     const mongoUri =
@@ -93,7 +93,7 @@ const connectDB = async () => {
   }
 };
 
-// Apply auth middleware to protected routes
+// Auth middleware for protected routes
 projectsRouter.use(authMiddleware);
 coachingsRouter.use(authMiddleware);
 

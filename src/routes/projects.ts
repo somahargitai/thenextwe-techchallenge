@@ -1,8 +1,8 @@
 import Router from 'koa-router';
 import { Context } from 'koa';
-import { Project } from '../models/Project';
-import { Coaching, ICoaching } from '../models/Coaching';
+
 import { authMiddleware } from '../middleware/auth';
+import { AccessControl } from '../utils/accessControl';
 
 const router = new Router();
 router.use(authMiddleware);
@@ -16,14 +16,9 @@ router.use(authMiddleware);
  *       Returns projects filtered by user role and access permissions:
  *       - **ops**: Access to all projects
  *       - **pm**: Only projects where user is listed as manager
- *       - **client/coach**: Projects accessible through coaching relationships
+ *       - **client/coach**: Access denied (403 Forbidden)
  *     tags:
  *       - Projects
- *     securitySchemes:
- *       UserIdHeader:
- *         type: apiKey
- *         in: header
- *         name: x-user-id
  *     security:
  *       - UserIdHeader: []
  *     responses:
@@ -61,38 +56,18 @@ router.use(authMiddleware);
  *                   type: string
  *                   example: "Forbidden"
  */
-router.get('/projects', async (ctx: Context) => {
-  const user = ctx.state.user;
+router.get('/projects', async (context: Context) => {
+  const user = context.state.user;
 
-  switch (user.role) {
-    case 'ops':
-      ctx.body = await Project.find();
-      break;
-    case 'pm':
-      ctx.body = await Project.find({ managerIds: user._id });
-      break;
-    case 'client': {
-      const coachings = await Coaching.find({ clientId: user._id });
-      const projectIds = coachings.map(
-        (coachingItem: ICoaching) => coachingItem.projectId
-      );
+  const projects = await AccessControl.getAccessibleProjects(user);
 
-      ctx.body = await Project.find({ _id: { $in: projectIds } });
-      break;
-    }
-    case 'coach': {
-      const coachings = await Coaching.find({ coachId: user._id });
-      const projectIds = coachings.map(
-        (coachingItem: ICoaching) => coachingItem.projectId
-      );
-
-      ctx.body = await Project.find({ _id: { $in: projectIds } });
-      break;
-    }
-    default:
-      ctx.status = 403;
-      ctx.body = { error: 'Forbidden' };
+  if (!['ops', 'pm'].includes(user.role)) {
+    context.status = 403;
+    context.body = { error: 'Forbidden' };
+    return;
   }
+
+  context.body = projects;
 });
 
 export default router;

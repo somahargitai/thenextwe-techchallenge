@@ -1,8 +1,9 @@
 import Router from 'koa-router';
 import { Context } from 'koa';
+
 import { Coaching } from '../models/Coaching';
-import { Project } from '../models/Project';
 import { authMiddleware } from '../middleware/auth';
+import { AccessControl } from '../utils/accessControl';
 
 const router = new Router();
 router.use(authMiddleware);
@@ -59,28 +60,26 @@ router.use(authMiddleware);
  *                   type: string
  *                   example: "Forbidden"
  */
-router.get('/coachings', async (ctx: Context) => {
-  const user = ctx.state.user;
-  switch (user.role) {
-    case 'ops':
-      ctx.body = await Coaching.find();
-      break;
-    case 'pm': {
-      const projects = await Project.find({ managerIds: user._id });
-      const projectIds = projects.map((p) => p._id);
-      ctx.body = await Coaching.find({ projectId: { $in: projectIds } });
-      break;
-    }
-    case 'client':
-      ctx.body = await Coaching.find({ clientId: user._id });
-      break;
-    case 'coach':
-      ctx.body = await Coaching.find({ coachId: user._id });
-      break;
-    default:
-      ctx.status = 403;
-      ctx.body = { error: 'Forbidden' };
+router.get('/coachings', async (context: Context) => {
+  const user = context.state.user;
+
+  const coachings = await AccessControl.getFilteredResources(user, {
+    resourceModel: Coaching,
+    clientIdField: 'clientId',
+    coachIdField: 'coachId',
+    projectIdField: 'projectId',
+  });
+
+  if (
+    user.role === 'unknown' ||
+    !['ops', 'pm', 'client', 'coach'].includes(user.role)
+  ) {
+    context.status = 403;
+    context.body = { error: 'Forbidden' };
+    return;
   }
+
+  context.body = coachings;
 });
 
 export default router;
